@@ -1,2 +1,2 @@
-# Prisma and Postgres
+# DB & ORM
 
