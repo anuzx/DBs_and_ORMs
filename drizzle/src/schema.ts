@@ -1,3 +1,4 @@
+import { relations } from "drizzle-orm";
 import { uniqueIndex, unique, real, timestamp, primaryKey } from "drizzle-orm/pg-core";
 import { integer, pgTable, varchar, uuid, pgEnum, boolean } from "drizzle-orm/pg-core";
 
@@ -17,8 +18,8 @@ export const usersTable = pgTable("users", {
   }
 });
 
-
-export const UserPreferenceTable = pgTable("userReferences", {
+// one to one
+export const UserPreferenceTable = pgTable("userPreferences", {
   id: uuid("id").primaryKey().defaultRandom(),
   emailUpdates: boolean("email_updates").notNull().default(false),
   userId: uuid("userId").references(() => usersTable.id).notNull() //foreign key reln
@@ -47,5 +48,55 @@ export const PostCategoryTable = pgTable("postCategory", {
 }, table => {
   return {
     primaryKey: primaryKey({ columns: [table.postId, table.categoryId] })
+  }
+})
+
+
+//RELATIONS: this enables nested query inside drizzle ,drizzle level references
+
+export const UserTableRelations = relations(usersTable, ({ one, many }) => {
+  return {
+    preferences: one(UserPreferenceTable),
+    posts: many(PostTable)
+  }
+})
+
+//UserPreferenceTable has userId so we need to pass fields and references here
+export const UserPreferencesTableRelations = relations(UserPreferenceTable, ({ one }) => {
+  return {
+    user: one(usersTable, {
+      fields: [UserPreferenceTable.userId],
+      references: [usersTable.id],
+
+    })
+  }
+})
+
+export const PostTableRealtions = relations(PostTable, ({ one, many }) => {
+  return {
+    author: one(usersTable, {
+      fields: [PostTable.authorId],
+      references: [usersTable.id]
+    }),
+    postCategories: many(PostCategoryTable)
+  }
+})
+
+export const CategoryTableRelations = relations(CategoryTable, ({ many }) => {
+  return {
+    postCategories: many(PostCategoryTable)
+  }
+})
+
+export const PostCategoryTableRealtions = relations(PostCategoryTable, ({ one }) => {
+  return {
+    post: one(PostTable, {
+      fields: [PostCategoryTable.postId],
+      references: [PostTable.id]
+    }),
+    category: one(CategoryTable, {
+      fields: [PostCategoryTable.categoryId],
+      references: [CategoryTable.id]
+    })
   }
 })
